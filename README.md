@@ -85,6 +85,23 @@ the loader), a hardware **rescue pin** that erases CNE (`CnE Erased Successfully
 XModem re-flash. The web update form (port 80) is independent of the 50001 tunnel.
 **Unverified** whether a failed app boot auto-enters recovery without the rescue pin.
 
+## Boot & scatter chain (verified)
+
+Traced from the image, needed to make a correct multi-region memory map:
+
+- **Reset** — file `0x40` (ARM): sets `SP = 0x0040da00`, branches to the C-runtime.
+- **C-runtime** — file `0x6a` (Thumb): standard RVCT `__rt_entry` sequence.
+- **`__scatterload`** — file `0x18b4` (ARM): loads pointers `0x0040f39c` and `0x0040f3b0`
+  and processes each via `bl 0x14e8` and `bl 0x1210`.
+- The region descriptors are **not** a plain `{src,dst,size,copyfn}` `Region$$Table` —
+  the bytes at `0x40f39c` are code/encoded, so this uses a **custom/compressed** scatter
+  format decoded by `0x14e8` / `0x1210`. Decoding those two routines is the key to the
+  full region map (and thus to resolving every cross-region string reference). **Open.**
+
+Boot runs at base 0 (run address == file offset); the main image relocates into DDR
+with at least two distinct run bases observed (`0x40400000`-class for the validator
+region, `0x40000000`-class for the `REMOTE_REGISTERS` string region).
+
 ## Open questions
 
 - Does `[CommunicationSettings] TCPIPTunnel = TELNET` (the enum value exists alongside
