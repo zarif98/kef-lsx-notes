@@ -95,9 +95,17 @@ Traced from the image, needed to make a correct multi-region memory map:
   block at `0xe0007000` from config descriptors at `0x40f39c`/`0x40f3b0`, via `0x14e8`
   and `0x1210` (byte-wise `bfi` into registers — DDR/PLL/clock bring-up, **not** a memory
   copy). *(An earlier draft mislabeled `0x18b4` as `__scatterload`; it is hardware init.)*
-- **`__scatterload` not yet located.** The routine that relocates the image into its DDR
-  run regions is deeper in the C-runtime chain (reached via the other `bl`/`blx` targets
-  from file `0x6a`) and remains the open keystone for the full region map.
+- **No region-copy loader exists inside seg0.** The full boot/C-runtime chain was traced
+  (reset → C-rt @`0x6a` → HW init @`0x18b4` → ZI zero-init @`0x88` → plumbing → `svc 0xab`
+  exit @`0x434`). None of it performs a flash→DDR region copy, and the `bCoD` header encodes
+  only 3 coarse segments with **no fine DDR region map**.
+- **Conclusion: the fine-grained relocation map is not in the `.fw` image.** The multi-region
+  placement (distinct run bases observed for the code vs. string regions) must be done by the
+  **first-stage bootloader (BSL)**, which lives in a separate flash partition *not* included in
+  the downloadable firmware. So the complete region map **cannot be reconstructed from this
+  file alone** — it needs a BSL/live-RAM dump over hardware (UART/JTAG). This is the same
+  physical-access boundary the UART1-only debug shell points to: deeper mapping requires the
+  board, not more static analysis of the `.fw`.
 
 Boot runs at base 0 (run address == file offset); the main image relocates into DDR
 with at least two distinct run bases observed (`0x40400000`-class for the validator
