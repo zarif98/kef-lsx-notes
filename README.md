@@ -78,6 +78,26 @@ function entry points weren't isolated in headless analysis. They share the iden
 `bad path`/`bad attribute name`/`sanity error` triad and SDS structure, so the same
 restriction is **likely but unverified**.)*
 
+## Full network write-surface audit
+
+Beyond the three SDS setters, the entire network-reachable write surface was enumerated;
+all of it is fixed-purpose or read-only — **no path accepts an arbitrary config key:**
+
+| Path | Scope |
+|------|-------|
+| `iOSCommSetCneValue` (SDS) | networking allowlist — verified by decompile |
+| `CommSetCneValue` / `JBLinkSetCneValue` (SDS) | same error-triad/structure (fixed) |
+| UPnP RenderingControl custom actions | read-only getters (status / firmware / signal) |
+| QPlay `X_*` | playback control |
+| `SetNetwork` / `SetNetworkUp` | bring interface up |
+| `webCfgNetSetConfigPath` | networking config, validated (`"not a config path"`) |
+| `SetProperty` | DACP / audio playback properties |
+
+Conclusion: there is **no network path to write an arbitrary CNE key** (e.g. `/dev/TelnetShell`,
+`Shell/autoexec`). Enabling the shell over the network is therefore not possible via any
+audited interface — it requires either the (unverified, unsigned-image) firmware patch or
+the UART1 serial console.
+
 ## Recovery / bootloader (relevant if anyone patches the unsigned image)
 
 Two-level bootloader separate from the app: `aspSetRebootInBSL` (software route into
