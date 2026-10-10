@@ -91,12 +91,13 @@ Traced from the image, needed to make a correct multi-region memory map:
 
 - **Reset** — file `0x40` (ARM): sets `SP = 0x0040da00`, branches to the C-runtime.
 - **C-runtime** — file `0x6a` (Thumb): standard RVCT `__rt_entry` sequence.
-- **`__scatterload`** — file `0x18b4` (ARM): loads pointers `0x0040f39c` and `0x0040f3b0`
-  and processes each via `bl 0x14e8` and `bl 0x1210`.
-- The region descriptors are **not** a plain `{src,dst,size,copyfn}` `Region$$Table` —
-  the bytes at `0x40f39c` are code/encoded, so this uses a **custom/compressed** scatter
-  format decoded by `0x14e8` / `0x1210`. Decoding those two routines is the key to the
-  full region map (and thus to resolving every cross-region string reference). **Open.**
+- **System / hardware init** — file `0x18b4` (ARM): programs the peripheral register
+  block at `0xe0007000` from config descriptors at `0x40f39c`/`0x40f3b0`, via `0x14e8`
+  and `0x1210` (byte-wise `bfi` into registers — DDR/PLL/clock bring-up, **not** a memory
+  copy). *(An earlier draft mislabeled `0x18b4` as `__scatterload`; it is hardware init.)*
+- **`__scatterload` not yet located.** The routine that relocates the image into its DDR
+  run regions is deeper in the C-runtime chain (reached via the other `bl`/`blx` targets
+  from file `0x6a`) and remains the open keystone for the full region map.
 
 Boot runs at base 0 (run address == file offset); the main image relocates into DDR
 with at least two distinct run bases observed (`0x40400000`-class for the validator

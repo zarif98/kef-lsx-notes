@@ -12,14 +12,16 @@ where you can follow references and define memory blocks as you learn them.
   `os/mac_arm_64/decompile`; or use an official release that ships the mac native.)
 - Create an initial block for the boot region at run base 0 (run addr == file offset).
 
-## 1. Decode the scatter format (the keystone)
-- Disassemble `__scatterload` at file `0x18b4` (ARM). It loads `0x0040f39c` and
-  `0x0040f3b0` and calls `0x14e8` and `0x1210`.
-- Reverse `0x14e8` and `0x1210` — these consume the descriptors at `0x40f39c`/`0x40f3b0`
-  and write regions into DDR. Determine, per region: **flash src, run dst, size**, and
-  whether the copy is verbatim or decompressed.
-- Expect multiple regions; two run bases already observed (`0x40400000`-class and
-  `0x40000000`-class). Record every `(src, dst, size)`.
+## 1. Locate __scatterload, then decode the region format (the keystone)
+- NOTE: `0x18b4` is **hardware init** (writes `0xe0007000` registers from descriptors at
+  `0x40f39c`/`0x40f3b0` via `0x14e8`/`0x1210`), not the scatter-loader. Don't start there.
+- From the C-runtime entry at file `0x6a`, follow the remaining `bl`/`blx` targets
+  (`0x88`, `0x62`, `0xd2`, `0x66`, `0x434`, and `blx 0x1754`) to find the routine that
+  does the region copy loop — look for the classic `LDMIA rX!,{r0-r3}` + `BLX r3`
+  dispatch, or a `__scatterload_copy`/`__scatterload_decompress` LDR/STR loop.
+- Once found, read its region table: per region **flash src, run dst, size**, and whether
+  verbatim or decompressed. Two run bases already observed (`0x40400000`-class for the
+  validator region, `0x40000000`-class for the `REMOTE_REGISTERS` string region).
 
 ## 2. Rebuild the memory map
 - For each decoded region, create a Ghidra memory block mapping file bytes → run dst.
