@@ -9,6 +9,11 @@ Chip identifications are cross-checked against the
 > Status: notes, not a how-to. Several conclusions are marked **unverified** where
 > they rest on static analysis that wasn't confirmed on hardware. Corrections welcome.
 
+**Reproduce it:** [`tools/`](tools/) has read-only scripts to fetch, parse, and decompile
+the firmware (bCoD parser, run-base finder, Ghidra decompile script). The firmware binary
+itself is KEF's proprietary image and is not mirrored here — `tools/README.md` has the
+official download + a SHA-256 to verify it.
+
 ## Platform
 
 | Part | Role |
